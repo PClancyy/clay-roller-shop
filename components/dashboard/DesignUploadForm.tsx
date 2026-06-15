@@ -10,22 +10,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useActionState } from "react";
-
 
 export function DesignUploadForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-const [error, setError] = useState<string | null>(null);
-const initialState = {
-  error: null,
-  success: false,
-};
 
-  const [state, formAction, isPending] = useActionState(
-    submitEnquiry,
-    initialState
-  );
+  async function handleSubmit(formData: FormData) {
+    try {
+      setLoading(true);
+
+      await submitEnquiry(formData);
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error(error);
+      alert("Submission failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (submitted) {
     return (
@@ -48,20 +51,9 @@ const initialState = {
 
   return (
     <form
-      action={formAction}
+      action={handleSubmit}
       className="space-y-8"
     >
-
-    {state.error && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
-              {state.error}
-            </div>
-          )}
-
-          <button disabled={isPending}>
-            {isPending ? "Submitting..." : "Submit"}
-          </button>
-
       {/* Honeypot */}
       <input
         type="text"

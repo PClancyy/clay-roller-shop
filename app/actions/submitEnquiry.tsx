@@ -4,13 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function submitEnquiry(formData: FormData) {
   console.log("FORM KEYS:", Array.from(formData.keys()));
-if (!file) throw new Error("No file uploaded");
 
-const maxSize = 50 * 1024 * 1024; // 50MB
-
-if (file.size > maxSize) {
-  throw new Error("File too large (max 50MB)");
-}
 
 const allowed = [
   "image/png",
@@ -18,10 +12,6 @@ const allowed = [
   "image/svg+xml",
   "application/pdf",
 ];
-
-if (!allowed.includes(file.type)) {
-  throw new Error("Invalid file type");
-}
   const name = formData.get("name")?.toString();
   const email = formData.get("email")?.toString();
   const notes = formData.get("notes")?.toString();
@@ -36,6 +26,18 @@ if (!allowed.includes(file.type)) {
   });
 
   const supabase = await createClient();
+
+  if (!file) throw new Error("No file uploaded");
+
+  const maxSize = 50 * 1024 * 1024; // 50MB
+
+  if (file.size > maxSize) {
+    throw new Error("File too large (max 50MB)");
+  }
+
+if (!allowed.includes(file.type)) {
+  throw new Error("Invalid file type");
+}
 
   const fileName = `${Date.now()}-${file.name}`;
 
