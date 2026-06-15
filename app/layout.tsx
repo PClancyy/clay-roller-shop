@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Racin' & Cruisin'",
+  title: "Custom Clay Rollers'",
   description: "ProcureInt Ltd",
 };
 
