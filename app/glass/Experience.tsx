@@ -289,7 +289,7 @@ export default function Experience({
     uniforms.uC4.value.set(...selectedPalette[3]);
     uniforms.uC5.value.set(...selectedPalette[4]);
 
-    uniforms.uAlgo.value = algo === "Algo1" ? 0 : 1;
+    uniforms.uAlgo.value = 1;
   });
 
   // Dispose of the resources created for the noise pass.
