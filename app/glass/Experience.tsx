@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
@@ -6,7 +7,6 @@ import {
   useLoader,
   useThree,
 } from "@react-three/fiber";
-import { useControls } from "leva";
 import * as THREE from "three";
 
 type ShaderSources = {
@@ -48,20 +48,20 @@ const PALETTES: Record<
   ],
 };
 
-const PRESETS = {
-  Balanced: {
-    noiseScaleX: 1.4,
-    noiseScaleY: 1.0,
-    warpStrength: 0.3,
-    algo: "Algo1",
-  },
-  "Flow-like": {
-    noiseScaleX: 0.35,
-    noiseScaleY: 0.55,
-    warpStrength: 0.4,
-    algo: "Algo2",
-  },
-};
+// Fixed production settings.
+// These preserve the previous Flow-like / Neon Flux appearance.
+const GLASS_SETTINGS = {
+  palette: "Neon Flux",
+  noiseScaleX: 0.35,
+  noiseScaleY: 0.55,
+  warpStrength: 0.4,
+  grainStrength: 0.5,
+  fluteWidth: 70,
+  fluteStrength: 140,
+  patternBrightness: 0.9,
+  warpSpeed: 0.12,
+  algo: "Algo2",
+} as const;
 
 export default function Experience({
   shaders,
@@ -72,99 +72,23 @@ export default function Experience({
 
   const elapsedTime = useRef(0);
 
+  const {
+    palette,
+    noiseScaleX,
+    noiseScaleY,
+    warpStrength,
+    grainStrength,
+    fluteWidth,
+    fluteStrength,
+    patternBrightness,
+    warpSpeed,
+    algo,
+  } = GLASS_SETTINGS;
+
   const grainTexture = useLoader(
     THREE.TextureLoader,
     "/textures/film_grain_contrasted.jpg"
   );
-
-  const [
-    {
-      palette,
-      noiseScaleX,
-      noiseScaleY,
-      warpStrength,
-      grainStrength,
-      fluteWidth,
-      fluteStrength,
-      patternBrightness,
-      warpSpeed,
-      algo,
-      patternPreset,
-    },
-    set,
-  ] = useControls(() => ({
-    patternPreset: {
-      value: "Flow-like",
-      options: ["Balanced", "Flow-like"],
-      label: "Pattern",
-    },
-    palette: {
-      value: "Neon Flux",
-      options: ["Neon Flux", "Sunset", "Aurora"],
-      label: "Palette",
-    },
-    algo: {
-      value: "Algo2",
-      options: ["Algo1", "Algo2"],
-      label: "Algo",
-    },
-    noiseScaleX: {
-      value: 0.35,
-      min: 0.1,
-      max: 5.0,
-      step: 0.05,
-      label: "Noise Scale X",
-    },
-    noiseScaleY: {
-      value: 0.55,
-      min: 0.1,
-      max: 5.0,
-      step: 0.05,
-      label: "Noise Scale Y",
-    },
-    warpStrength: {
-      value: 0.4,
-      min: 0.0,
-      max: 2.0,
-      step: 0.01,
-      label: "Warp Strength",
-    },
-    warpSpeed: {
-      value: 0.12,
-      min: 0.0,
-      max: 1.0,
-      step: 0.01,
-      label: "Warp Speed",
-    },
-    grainStrength: {
-      value: 0.5,
-      min: 0.0,
-      max: 1.0,
-      step: 0.005,
-      label: "Film Grain",
-    },
-    fluteWidth: {
-      value: 70.0,
-      min: 5.0,
-      max: 200.0,
-      step: 1.0,
-      label: "Flute Width",
-    },
-    fluteStrength: {
-      value: 140.0,
-      min: 0.0,
-      max: 200.0,
-      step: 1.0,
-      label: "Flute Refraction",
-    },
-    patternBrightness: {
-      value: 0.9,
-      min: 0.01,
-      max: 2.0,
-      step: 0.01,
-      label: "Brightness",
-    },
-  }));
 
   const aspect = size.width / size.height;
 
@@ -189,11 +113,6 @@ export default function Experience({
     grainTexture.needsUpdate = true;
   }, [grainTexture]);
 
-  // Apply the selected pattern preset.
-  useEffect(() => {
-    set(PRESETS[patternPreset as keyof typeof PRESETS]);
-  }, [patternPreset, set]);
-
   // Noise framebuffer.
   const noiseTarget = useMemo(() => {
     const target = new THREE.WebGLRenderTarget(256, 256, {
@@ -212,14 +131,13 @@ export default function Experience({
     return target;
   }, []);
 
-  // These uniforms are required by the original vertex.glsl,
-  // as well as the noise fragment shader.
+  // Uniforms required by the original vertex and noise shaders.
   const noiseUniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uNoiseScaleX: { value: 0.35 },
-      uNoiseScaleY: { value: 0.55 },
-      uWarpSpeed: { value: 0.12 },
+      uNoiseScaleX: { value: noiseScaleX },
+      uNoiseScaleY: { value: noiseScaleY },
+      uWarpSpeed: { value: warpSpeed },
       uResolution: {
         value: new THREE.Vector2(size.width, size.height),
       },
@@ -231,7 +149,7 @@ export default function Experience({
       },
       uPixelRatio: { value: gl.getPixelRatio() },
     }),
-    [grainTexture, gl, size.width, size.height]
+    [grainTexture, gl, size.width, size.height, noiseScaleX, noiseScaleY, warpSpeed]
   );
 
   // Separate scene used to render the animated noise texture.
@@ -282,31 +200,43 @@ export default function Experience({
           grainTexture.image.height
         ),
       },
-      uWarpStrength: { value: 0.4 },
+      uWarpStrength: { value: warpStrength },
       uNoiseMap: { value: noiseTarget.texture },
       uGrainTexture: { value: grainTexture },
-      uGrainStrength: { value: 0.5 },
-      uFluteWidth: { value: 70 },
-      uFluteStrength: { value: 140 },
-      uToneMapExposure: { value: 0.9 },
+      uGrainStrength: { value: grainStrength },
+      uFluteWidth: { value: fluteWidth },
+      uFluteStrength: { value: fluteStrength },
+      uToneMapExposure: { value: patternBrightness },
       uC1: {
-        value: new THREE.Vector3(...PALETTES["Neon Flux"][0]),
+        value: new THREE.Vector3(...PALETTES[palette][0]),
       },
       uC2: {
-        value: new THREE.Vector3(...PALETTES["Neon Flux"][1]),
+        value: new THREE.Vector3(...PALETTES[palette][1]),
       },
       uC3: {
-        value: new THREE.Vector3(...PALETTES["Neon Flux"][2]),
+        value: new THREE.Vector3(...PALETTES[palette][2]),
       },
       uC4: {
-        value: new THREE.Vector3(...PALETTES["Neon Flux"][3]),
+        value: new THREE.Vector3(...PALETTES[palette][3]),
       },
       uC5: {
-        value: new THREE.Vector3(...PALETTES["Neon Flux"][4]),
+        value: new THREE.Vector3(...PALETTES[palette][4]),
       },
       uAlgo: { value: 1 },
     }),
-    [grainTexture, noiseTarget, gl, size.width, size.height]
+    [
+      grainTexture,
+      noiseTarget,
+      gl,
+      size.width,
+      size.height,
+      palette,
+      warpStrength,
+      grainStrength,
+      fluteWidth,
+      fluteStrength,
+      patternBrightness,
+    ]
   );
 
   // Animate both passes using the same elapsed time.
@@ -321,10 +251,12 @@ export default function Experience({
     noiseUniforms.uWarpSpeed.value = warpSpeed;
 
     noiseUniforms.uResolution.value.set(size.width, size.height);
+
     noiseUniforms.uGrainTextureSize.value.set(
       grainTexture.image.width,
       grainTexture.image.height
     );
+
     noiseUniforms.uPixelRatio.value = gl.getPixelRatio();
 
     // Render noise into the framebuffer.
@@ -349,8 +281,7 @@ export default function Experience({
     uniforms.uFluteStrength.value = fluteStrength;
     uniforms.uToneMapExposure.value = patternBrightness;
 
-    const selectedPalette =
-      PALETTES[palette as keyof typeof PALETTES];
+    const selectedPalette = PALETTES[palette];
 
     uniforms.uC1.value.set(...selectedPalette[0]);
     uniforms.uC2.value.set(...selectedPalette[1]);
