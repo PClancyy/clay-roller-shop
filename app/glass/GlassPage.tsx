@@ -108,7 +108,6 @@ useEffect(() => {
 
   return (
     <main className="fixed inset-0 bg-[#050817]">
-      <Leva collapsed />
 
       {shaders && (
         <Canvas
