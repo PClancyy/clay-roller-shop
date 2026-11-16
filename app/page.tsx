@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { DesignUploadForm } from "@/components/dashboard/DesignUploadForm";
-
+import GlassIntro from "./GlassIntro";
 export default function HomePage() {
   return (
+        <GlassIntro>
     <main className="min-h-screen bg-[#FAF7F4] text-[#2A2A2A]">
 
       {/* HERO */}
@@ -369,5 +370,6 @@ export default function HomePage() {
       </footer>
 
     </main>
+      </GlassIntro>
   );
 }
